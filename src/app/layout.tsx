@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
-import { eventConfig, eventTypeLabels } from "@/lib/config";
+import { eventTypeLabels } from "@/lib/config";
 import { getEventConfig } from "@/lib/event-config.server";
 import "./globals.css";
 
@@ -32,8 +32,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
-  const { theme } = eventConfig;
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Tema renkleri de admin panelinden düzenlenebiliyor; statik config.ts
+  // yerine çözümlenmiş (DB > config.ts) değer kullanılır.
+  const { theme } = await getEventConfig();
   return (
     <html
       lang="tr"

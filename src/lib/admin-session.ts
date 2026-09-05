@@ -27,6 +27,19 @@ function fromBase64Url(value: string): Uint8Array {
   return Uint8Array.from(binary, (c) => c.charCodeAt(0));
 }
 
+// Sabit zamanlı karşılaştırma: erken çıkış yapan `!==` imza doğrulaması
+// zamanlama sızıntısına (timing attack) açıktır.
+function timingSafeEqual(a: string, b: string): boolean {
+  const left = new TextEncoder().encode(a);
+  const right = new TextEncoder().encode(b);
+  let diff = left.length ^ right.length;
+  const length = Math.max(left.length, right.length);
+  for (let i = 0; i < length; i++) {
+    diff |= (left[i] ?? 0) ^ (right[i] ?? 0);
+  }
+  return diff === 0;
+}
+
 async function hmac(payload: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -51,7 +64,7 @@ export async function verifyAdminSessionToken(token: string | undefined | null):
   const [payloadB64, signature] = token.split(".");
   if (!payloadB64 || !signature) return false;
   const expectedSignature = await hmac(payloadB64);
-  if (expectedSignature !== signature) return false;
+  if (!timingSafeEqual(expectedSignature, signature)) return false;
   try {
     const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(payloadB64)));
     return typeof payload.exp === "number" && payload.exp > Date.now();

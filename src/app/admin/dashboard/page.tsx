@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
-import { AlertTriangle, Download, Edit2, LogOut, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
+import { AlertTriangle, Download, LogOut, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
 import { eventConfig } from "@/lib/config";
 import type { RsvpRecord, GuestbookRecord, PhotoRecord } from "@/lib/types";
 import FloatingBackground from "@/components/FloatingBackground";
+import EventConfigEditor from "@/components/admin/EventConfigEditor";
 
 interface DashboardData {
   rsvps: RsvpRecord[];
@@ -24,36 +25,8 @@ const statusLabels: Record<string, string> = {
   undecided: "Belirsiz",
 };
 
-// Etkinlik saatleri her zaman Türkiye saatiyle girilir ve gösterilir.
-// Türkiye 2016'dan beri yaz saati uygulamadığı için ofset yıl boyu sabittir.
+// Etkinlik saatleri her zaman Türkiye saatiyle gösterilir.
 const EVENT_TIMEZONE = "Europe/Istanbul";
-const EVENT_UTC_OFFSET = "+03:00";
-
-// Veritabanından gelen ISO damgasını <input type="datetime-local"> için
-// Türkiye saatine çevirir. "sv-SE" yerel biçimi "2026-09-06 20:00" verir.
-function isoToDateTimeLocal(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("sv-SE", {
-    timeZone: EVENT_TIMEZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  })
-    .format(date)
-    .replace(" ", "T");
-}
-
-// Formdaki saat dilimsiz değeri ("2026-09-06T20:00") Türkiye saati olarak
-// etiketler. Bu olmadan Postgres değeri UTC sayıyor ve etkinlik 3 saat kayıyordu.
-function dateTimeLocalToIso(value: string): string | null {
-  if (!value) return null;
-  return `${value}:00${EVENT_UTC_OFFSET}`;
-}
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -65,21 +38,6 @@ export default function AdminDashboardPage() {
   const [resetConfirmText, setResetConfirmText] = useState("");
   const [resetting, setResetting] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
-  const [editConfigOpen, setEditConfigOpen] = useState(false);
-  const [configData, setConfigData] = useState({
-    bride_name: "",
-    groom_name: "",
-    bride_father: "",
-    bride_mother: "",
-    groom_father: "",
-    groom_mother: "",
-    event_date: "",
-    event_end_at: "",
-    venue_name: "",
-    venue_address: "",
-  });
-  const [editLoading, setEditLoading] = useState(false);
-  const [editMessage, setEditMessage] = useState<string | null>(null);
 
   async function loadData() {
     setLoading(true);
@@ -88,65 +46,8 @@ export default function AdminDashboardPage() {
     setLoading(false);
   }
 
-  async function loadConfigData() {
-    // /api/config, DB'de henüz doldurulmamış alanlar için config.ts
-    // varsayılanlarına düşer — böylece form her zaman sitede o an
-    // görünen gerçek değerleri gösterir, boş alanlarla admini yanıltmaz.
-    const res = await fetch("/api/config");
-    if (res.ok) {
-      const cfg = await res.json();
-      setConfigData({
-        bride_name: cfg.bride_name || "",
-        groom_name: cfg.groom_name || "",
-        bride_father: cfg.bride_father || "",
-        bride_mother: cfg.bride_mother || "",
-        groom_father: cfg.groom_father || "",
-        groom_mother: cfg.groom_mother || "",
-        event_date: isoToDateTimeLocal(cfg.event_date),
-        event_end_at: isoToDateTimeLocal(cfg.event_end_at),
-        venue_name: cfg.venue_name || "",
-        venue_address: cfg.venue_address || "",
-      });
-    }
-  }
-
-  async function handleSaveConfig() {
-    const startIso = dateTimeLocalToIso(configData.event_date);
-    const endIso = dateTimeLocalToIso(configData.event_end_at);
-
-    // Gece yarısını aşan düğünlerde bitiş tarihini bir sonraki güne yazmayı
-    // unutmak, fotoğraf havuzunun daha etkinlik başlamadan herkese açılmasına
-    // yol açıyor. Kaydetmeden önce burada engelle.
-    if (startIso && endIso && new Date(endIso) <= new Date(startIso)) {
-      setEditMessage(
-        "Hata: Bitiş saati başlangıçtan sonra olmalı. Gece yarısını geçen etkinliklerde bitiş tarihi bir sonraki gün olmalıdır."
-      );
-      return;
-    }
-
-    setEditLoading(true);
-    setEditMessage(null);
-    const res = await fetch("/api/admin/event-config", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...configData, event_date: startIso, event_end_at: endIso }),
-    });
-    setEditLoading(false);
-
-    if (res.ok) {
-      setEditMessage("Etkinlik bilgileri kaydedildi. Davetiye sayfası artık bu bilgileri gösteriyor.");
-      loadData();
-      loadConfigData();
-      setTimeout(() => setEditConfigOpen(false), 2000);
-    } else {
-      const err = await res.json().catch(() => ({}));
-      setEditMessage(`Hata: ${err.error ?? "kaydedilemedi."}`);
-    }
-  }
-
   useEffect(() => {
     loadData();
-    loadConfigData();
     const base = eventConfig.siteUrl.replace(/\/$/, "");
     Promise.all([
       QRCode.toDataURL(base, { width: 480, margin: 1 }),
@@ -243,132 +144,7 @@ export default function AdminDashboardPage() {
               ))}
             </div>
 
-            <section className="rounded-2xl border border-[color:var(--color-primary)]/25 bg-[color:var(--color-primary)]/5 px-6 py-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="font-display text-lg text-[color:var(--color-text)]">Etkinlik Bilgilerini Düzenle</h2>
-                  <p className="mt-1 text-xs text-[color:var(--color-text)]/55">
-                    Gelin/damat isimleri, aile bilgileri, tarih ve mekan
-                  </p>
-                </div>
-                {!editConfigOpen && (
-                  <button
-                    onClick={() => {
-                      setEditConfigOpen(true);
-                      loadConfigData();
-                    }}
-                    className="flex items-center gap-2 rounded-xl border border-[color:var(--color-primary)]/40 px-4 py-2 text-sm text-[color:var(--color-primary)] hover:bg-[color:var(--color-primary)]/10"
-                  >
-                    <Edit2 size={16} /> Düzenle
-                  </button>
-                )}
-              </div>
-
-              {editConfigOpen && (
-                <div className="mt-6 space-y-4 rounded-xl bg-white/5 p-5">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <input
-                      type="text"
-                      value={configData.bride_name}
-                      onChange={(e) => setConfigData({ ...configData, bride_name: e.target.value })}
-                      placeholder="Gelin Adı"
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-[color:var(--color-text)]/30 focus:border-[color:var(--color-primary)]"
-                    />
-                    <input
-                      type="text"
-                      value={configData.groom_name}
-                      onChange={(e) => setConfigData({ ...configData, groom_name: e.target.value })}
-                      placeholder="Damat Adı"
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-[color:var(--color-text)]/30 focus:border-[color:var(--color-primary)]"
-                    />
-                    <input
-                      type="text"
-                      value={configData.bride_father}
-                      onChange={(e) => setConfigData({ ...configData, bride_father: e.target.value })}
-                      placeholder="Gelin Babası"
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-[color:var(--color-text)]/30 focus:border-[color:var(--color-primary)]"
-                    />
-                    <input
-                      type="text"
-                      value={configData.bride_mother}
-                      onChange={(e) => setConfigData({ ...configData, bride_mother: e.target.value })}
-                      placeholder="Gelin Annesi"
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-[color:var(--color-text)]/30 focus:border-[color:var(--color-primary)]"
-                    />
-                    <input
-                      type="text"
-                      value={configData.groom_father}
-                      onChange={(e) => setConfigData({ ...configData, groom_father: e.target.value })}
-                      placeholder="Damat Babası"
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-[color:var(--color-text)]/30 focus:border-[color:var(--color-primary)]"
-                    />
-                    <input
-                      type="text"
-                      value={configData.groom_mother}
-                      onChange={(e) => setConfigData({ ...configData, groom_mother: e.target.value })}
-                      placeholder="Damat Annesi"
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-[color:var(--color-text)]/30 focus:border-[color:var(--color-primary)]"
-                    />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="block text-xs text-[color:var(--color-text)]/50 mb-1">Düğün Tarihi ve Saati</label>
-                      <input
-                        type="datetime-local"
-                        value={configData.event_date}
-                        onChange={(e) => setConfigData({ ...configData, event_date: e.target.value })}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[color:var(--color-primary)]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-[color:var(--color-text)]/50 mb-1">Düğün Bitişi Saati</label>
-                      <input
-                        type="datetime-local"
-                        value={configData.event_end_at}
-                        onChange={(e) => setConfigData({ ...configData, event_end_at: e.target.value })}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[color:var(--color-primary)]"
-                      />
-                    </div>
-                  </div>
-
-                  <input
-                    type="text"
-                    value={configData.venue_name}
-                    onChange={(e) => setConfigData({ ...configData, venue_name: e.target.value })}
-                    placeholder="Mekan Adı (ör. Zümrüt Davet Salonu)"
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-[color:var(--color-text)]/30 focus:border-[color:var(--color-primary)]"
-                  />
-                  <input
-                    type="text"
-                    value={configData.venue_address}
-                    onChange={(e) => setConfigData({ ...configData, venue_address: e.target.value })}
-                    placeholder="Mekan Adresi"
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-[color:var(--color-text)]/30 focus:border-[color:var(--color-primary)]"
-                  />
-
-                  {editMessage && (
-                    <p className="text-xs text-[color:var(--color-text)]/70">{editMessage}</p>
-                  )}
-
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      onClick={handleSaveConfig}
-                      disabled={editLoading}
-                      className="rounded-lg bg-[color:var(--color-primary)] px-4 py-2 text-sm font-medium text-[#1a1420] hover:opacity-90 disabled:opacity-50"
-                    >
-                      {editLoading ? "Kaydediliyor…" : "Kaydet"}
-                    </button>
-                    <button
-                      onClick={() => setEditConfigOpen(false)}
-                      className="rounded-lg border border-white/15 px-4 py-2 text-sm text-[color:var(--color-text)]/70"
-                    >
-                      Kapat
-                    </button>
-                  </div>
-                </div>
-              )}
-            </section>
+            <EventConfigEditor onSaved={loadData} />
 
             <div className="glass-card flex flex-wrap items-center justify-between gap-4 rounded-2xl px-6 py-5">
               <div>
@@ -485,11 +261,9 @@ export default function AdminDashboardPage() {
                     Bu düğün bitip yeni bir etkinlik (başka bir düğün/kına/sünnet) için bu siteyi
                     yeniden kullanacaksan: önce burada <strong>Tüm Verileri Sıfırla</strong>&apos;ya bas
                     (tüm RSVP&apos;ler, anı defteri yazıları ve fotoğraflar kalıcı olarak silinir),
-                    sonra yukarıdaki <strong>Etkinlik Bilgilerini Düzenle</strong> bölümünden
-                    isimleri, aile bilgilerini, tarihi ve mekanı güncelle — bunlar anında yayına
-                    girer. Program akışı ve IBAN bilgileri henüz panelden düzenlenemiyor; onlar için{" "}
-                    <code className="rounded bg-white/10 px-1">src/lib/config.ts</code> dosyasını
-                    güncelleyip GitHub&apos;a push etmen gerekir.
+                    sonra yukarıdaki <strong>Etkinlik Bilgilerini Düzenle</strong> bölümünden isim,
+                    aile, tarih, mekan, program ve IBAN dahil tüm bilgileri güncelle — hepsi bu
+                    panelden değişir, koda dokunmana gerek yok.
                   </p>
 
                   {!resetOpen && (

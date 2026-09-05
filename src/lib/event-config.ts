@@ -25,6 +25,13 @@ export interface ResolvedEventConfig {
   program: ProgramItem[];
   ibans: IbanCard[];
   siteUrl: string;
+  theme: {
+    primary: string;
+    primaryDark: string;
+    background: string;
+    surface: string;
+    textLight: string;
+  };
 }
 
 // Supabase'ten dönen ham satır — tüm alanlar opsiyonel ve null olabilir.
@@ -40,10 +47,16 @@ export interface EventConfigRow {
   event_end_at?: string | null;
   venue_name?: string | null;
   venue_address?: string | null;
+  venue_map_url?: string | null;
   welcome_title?: string | null;
   welcome_message?: string | null;
   program?: ProgramItem[] | null;
   ibans?: IbanCard[] | null;
+  theme_primary?: string | null;
+  theme_primary_dark?: string | null;
+  theme_background?: string | null;
+  theme_surface?: string | null;
+  theme_text_light?: string | null;
 }
 
 // Boş string de "doldurulmamış" sayılır — admin bir alanı silip kaydettiğinde
@@ -77,12 +90,18 @@ export function resolveEventConfig(row: EventConfigRow | null | undefined): Reso
     venue: {
       name: pick(db.venue_name, eventConfig.venue.name),
       address: pick(db.venue_address, eventConfig.venue.address),
-      // Harita linki admin panelinde düzenlenmiyor, her zaman config.ts'ten gelir.
-      mapUrl: eventConfig.venue.mapUrl,
+      mapUrl: pick(db.venue_map_url, eventConfig.venue.mapUrl),
     },
     program: db.program?.length ? db.program : eventConfig.program,
     ibans: db.ibans?.length ? db.ibans : eventConfig.ibans,
     siteUrl: eventConfig.siteUrl,
+    theme: {
+      primary: pick(db.theme_primary, eventConfig.theme.primary),
+      primaryDark: pick(db.theme_primary_dark, eventConfig.theme.primaryDark),
+      background: pick(db.theme_background, eventConfig.theme.background),
+      surface: pick(db.theme_surface, eventConfig.theme.surface),
+      textLight: pick(db.theme_text_light, eventConfig.theme.textLight),
+    },
   };
 }
 

@@ -36,11 +36,14 @@ There is no test suite configured.
      reveal check. Without it, `/api/photos` and `/api/admin/*` throw.
    - `ADMIN_PASSWORD` — password for `/admin`.
    - `ADMIN_SESSION_SECRET` — any long random string, used to HMAC-sign the admin session cookie.
-4. Edit [src/lib/config.ts](src/lib/config.ts): couple/child name(s), parents, `eventType`
-   (`"wedding" | "kina" | "sunnet"` — changes wording via `eventTypeLabels`), `date`, `weddingEndAt`
-   (when the photo pool auto-reveals), venue, `program` timeline, `ibans`, `siteUrl` (the deployed
-   domain — used to generate the QR codes), and `theme` colors (applied as CSS variables in
-   [src/app/layout.tsx](src/app/layout.tsx)).
+4. Edit [src/lib/config.ts](src/lib/config.ts) for the defaults. Every field except `siteUrl` can
+   also be edited later from `/admin/dashboard` → **Etkinlik Bilgilerini Düzenle** (writes to the
+   `event_config` table; an admin edit always overrides the file default — see "Config resolution"
+   below): couple/child name(s), parents, `eventType` (`"wedding" | "kina" | "sunnet"` — changes
+   wording via `eventTypeLabels`), `date`, `weddingEndAt` (when the photo pool auto-reveals), venue
+   (name/address/map link), `program` timeline, `ibans`, and `theme` colors (applied as CSS
+   variables in [src/app/layout.tsx](src/app/layout.tsx)). `siteUrl` (the deployed domain, used for
+   QR codes) is file-only.
 5. Deploy (e.g. Vercel) with the same env vars, point `siteUrl` at the real domain, then print/download
    the two QR codes from `/admin/dashboard` (invite link + photo-upload link).
 
@@ -69,11 +72,18 @@ No other file needs to change per event.
   unauthenticated requests to `/admin/dashboard/*` back to `/admin`; each `/api/admin/*` route also
   re-verifies the cookie itself (defense in depth, since the proxy matcher only covers page routes).
 
-**Config-driven UI**: almost every section component (`src/components/*Section.tsx`) reads directly
-from `eventConfig` — there's no CMS or props-drilling, the config file *is* the content source. Theme
-colors are threaded as CSS custom properties set inline on `<html>` in `layout.tsx` from
-`eventConfig.theme`, then consumed via `var(--color-primary)` etc. in `globals.css` and component
-classes (Tailwind arbitrary values like `text-[color:var(--color-primary)]`).
+**Config resolution (two layers)**: `src/lib/config.ts` holds the in-code defaults; the
+`event_config` table (edited from `/admin/dashboard`) is an override layer on top of it.
+`src/lib/event-config.ts`'s `resolveEventConfig()` merges the two — every filled DB column wins,
+blanks fall back to `config.ts` — and `src/lib/event-config.server.ts`'s `getEventConfig()` (wrapped
+in React `cache()`, so one request hits the DB once) fetches the row and resolves it. `src/app/page.tsx`
+(a Server Component) calls `getEventConfig()` once and passes the result down as a `config` prop to
+each `*Section.tsx` component; each section also accepts `defaultResolvedConfig` as its prop default
+so it renders sensibly when previewed without a prop. **Import `getEventConfig`/`resolveEventConfig`,
+never the raw `eventConfig` from `config.ts`, in anything that renders content** — reading the raw
+file bypasses admin edits. Theme colors are threaded as CSS custom properties set inline on `<html>`
+in `layout.tsx` from the resolved theme, then consumed via `var(--color-primary)` etc. in
+`globals.css` and component classes (Tailwind arbitrary values like `text-[color:var(--color-primary)]`).
 
 **Shared visual primitives**: `TiltCard` (pointer-driven 3D tilt + glow, desktop only) and `ScrollFade`
 (fade/slide on scroll-into-view) wrap most cards/sections — reuse these for any new section rather than

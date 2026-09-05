@@ -96,6 +96,7 @@ create table if not exists public.event_config (
   event_end_at timestamptz,
   venue_name text,
   venue_address text,
+  venue_map_url text,
   welcome_title text,
   welcome_message text,
   program jsonb, -- [{time, title, description}, ...]
