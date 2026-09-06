@@ -47,6 +47,13 @@ There is no test suite configured.
 5. Deploy (e.g. Vercel) with the same env vars, point `siteUrl` at the real domain, then print/download
    the two QR codes from `/admin/dashboard` (invite link + photo-upload link).
 
+**Deploying to production (important — no CI):** the live Vercel project (`dueguen/diji-davetim`) is
+**not** connected to auto-deploy on git push — its GitHub App integration isn't authorized, so pushing
+to `main` updates GitHub but does **not** trigger a new Vercel build. After every push meant to go
+live, deploy manually: `npx vercel --prod` (needs `vercel login` or a `VERCEL_TOKEN` env var once per
+machine). Confirm what's actually live with `npx vercel ls diji-davetim` (top row's Age) before
+assuming a push shipped.
+
 No other file needs to change per event.
 
 ## Architecture
