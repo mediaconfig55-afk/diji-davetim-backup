@@ -92,8 +92,13 @@ export function resolveEventConfig(row: EventConfigRow | null | undefined): Reso
       address: pick(db.venue_address, eventConfig.venue.address),
       mapUrl: pick(db.venue_map_url, eventConfig.venue.mapUrl),
     },
-    program: db.program?.length ? db.program : eventConfig.program,
-    ibans: db.ibans?.length ? db.ibans : eventConfig.ibans,
+    // `?? ` (null/undefined kontrolü) kasıtlı: admin panelinden tüm program
+    // öğeleri veya IBAN kartları silinip boş bir dizi kaydedilirse, bu geçerli
+    // bir durumdur ve config.ts varsayılanına geri dönmemeli. Eskiden `.length`
+    // kontrolü boş diziyi "hiç ayarlanmamış" sayıp admin'in silme işlemini
+    // sessizce geri alıyordu.
+    program: db.program ?? eventConfig.program,
+    ibans: db.ibans ?? eventConfig.ibans,
     siteUrl: eventConfig.siteUrl,
     theme: {
       primary: pick(db.theme_primary, eventConfig.theme.primary),
