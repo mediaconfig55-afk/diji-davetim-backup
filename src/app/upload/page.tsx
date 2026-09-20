@@ -11,9 +11,35 @@ import FloatingBackground from "@/components/FloatingBackground";
 const BUCKET = "wedding-photos";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-// Supabase Storage'ın varsayılan dosya sınırı 50 MB. Sınırı aşan dosyayı
-// yüklemeye kalkmak yerine misafire baştan anlaşılır bir mesaj göster.
-const MAX_FILE_BYTES = 50 * 1024 * 1024;
+// supabase/hardening.sql bucket'a 25 MB sınırı koyuyor. Buradaki değer onunla
+// aynı olmalı: aksi halde misafir yüklemeye başlıyor ve sunucu reddediyor.
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+// Tek seferde çok fazla dosya seçmek mobil tarayıcıyı kilitliyor.
+const MAX_FILES_PER_BATCH = 30;
+// hardening.sql'deki allowed_mime_types ile aynı liste.
+const ALLOWED_TYPES = [
+  "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/gif",
+];
+const MAX_NAME_LENGTH = 60;
+
+// Supabase'in ham hata metni misafire bir şey anlatmıyor ("new row violates
+// row-level security policy" gibi). Sık karşılaşılanları anlaşılır cümleye çevir.
+function friendlyError(raw: string): string {
+  const s = raw.toLowerCase();
+  if (s.includes("exceeded the maximum allowed size") || s.includes("payload too large")) {
+    return "Fotoğraf çok büyük. 25 MB'ın altındaki bir kareyi deneyin.";
+  }
+  if (s.includes("mime type") || s.includes("invalid_mime_type")) {
+    return "Bu dosya türü desteklenmiyor. Lütfen bir fotoğraf seçin.";
+  }
+  if (s.includes("row-level security") || s.includes("violates")) {
+    return "Yükleme reddedildi. Lütfen tekrar deneyin ya da çiftle iletişime geçin.";
+  }
+  if (s.includes("ağ") || s.includes("network") || s.includes("failed to fetch")) {
+    return "Bağlantı koptu. İnternetinizi kontrol edip tekrar deneyin.";
+  }
+  return "Fotoğraf yüklenemedi. Lütfen tekrar deneyin.";
+}
 
 function uploadFileWithProgress(path: string, file: File, onProgress: (pct: number) => void) {
   return new Promise<void>((resolve, reject) => {
@@ -62,18 +88,31 @@ export default function UploadPage() {
 
   function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files ?? []);
-    const tooLarge = selected.filter((f) => f.size > MAX_FILE_BYTES);
 
-    if (tooLarge.length > 0) {
-      setFiles(selected.filter((f) => f.size <= MAX_FILE_BYTES));
-      setError(
-        `${tooLarge.length} fotoğraf 50 MB sınırını aştığı için atlandı. Diğerleri yüklenebilir.`
-      );
-      return;
+    // Sunucunun zaten reddedeceği dosyaları buradan ele: misafir yüklemenin
+    // ortasında değil, seçim anında öğrensin.
+    const tooLarge = selected.filter((f) => f.size > MAX_FILE_BYTES);
+    const wrongType = selected.filter(
+      (f) => f.type && !ALLOWED_TYPES.includes(f.type.toLowerCase())
+    );
+    const skipped = new Set([...tooLarge, ...wrongType]);
+    let usable = selected.filter((f) => !skipped.has(f));
+
+    const notes: string[] = [];
+    if (tooLarge.length > 0) notes.push(`${tooLarge.length} dosya 25 MB'ı aştı`);
+    if (wrongType.length > 0) notes.push(`${wrongType.length} dosya fotoğraf değil`);
+
+    if (usable.length > MAX_FILES_PER_BATCH) {
+      notes.push(`tek seferde en fazla ${MAX_FILES_PER_BATCH} fotoğraf yüklenebilir`);
+      usable = usable.slice(0, MAX_FILES_PER_BATCH);
     }
 
-    setFiles(selected);
-    setError(null);
+    setFiles(usable);
+    setError(
+      notes.length > 0
+        ? `${notes.join(", ")}. ${usable.length > 0 ? "Kalanlar yüklenebilir." : ""}`.trim()
+        : null
+    );
   }
 
   async function handleUpload() {
@@ -107,7 +146,9 @@ export default function UploadPage() {
 
         const { error: insertError } = await supabaseBrowser.from("photos").insert({
           storage_path: path,
-          uploader_name: uploaderName.trim() || null,
+          // hardening.sql 60 karakterde kesiyor; burada da kırp ki
+          // uzun isim yüzünden kayıt tamamen düşmesin.
+          uploader_name: uploaderName.trim().slice(0, MAX_NAME_LENGTH) || null,
         });
 
         if (insertError) {
@@ -128,11 +169,14 @@ export default function UploadPage() {
     if (inputRef.current) inputRef.current.value = "";
 
     if (successCount === 0) {
+      // Ham Supabase hatasını misafire gösterme; anlaşılır karşılığını ver.
       setError(
         lastErrorMessage
-          ? `Yüklenemedi: ${lastErrorMessage}`
+          ? friendlyError(lastErrorMessage)
           : "Fotoğraflar yüklenemedi, lütfen tekrar deneyin."
       );
+    } else if (lastErrorMessage) {
+      setError(`${successCount} fotoğraf yüklendi, bir kısmı yüklenemedi. Kalanları tekrar deneyin.`);
     }
   }
 
@@ -178,6 +222,8 @@ export default function UploadPage() {
           <input
             value={uploaderName}
             onChange={(e) => setUploaderName(e.target.value)}
+            maxLength={MAX_NAME_LENGTH}
+            autoComplete="name"
             placeholder="Adınız (opsiyonel)"
             className="mt-4 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none placeholder:text-[color:var(--color-text)]/35 focus:border-[color:var(--color-primary)]"
           />
