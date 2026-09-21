@@ -20,10 +20,13 @@ export default function ProgramSection({
 
       <div className="mx-auto max-w-xl">
         <div className="glass-card rounded-3xl px-6 py-9 sm:px-10">
-          <ol className="relative border-l border-[color:var(--color-primary)]/30">
+          {/* Boşluk ol üzerinde: her li kendi ScrollFade sarmalayıcısının tek
+              çocuğu olduğu için li'deki last:mb-0 hepsine uyuyor ve aralık
+              tamamen kayboluyordu. */}
+          <ol className="relative space-y-8 border-l border-[color:var(--color-primary)]/30">
             {config.program.map((p, i) => (
               <ScrollFade key={p.time + p.title} delay={i * 0.1} y={20}>
-                <li className="relative mb-8 pl-8 last:mb-0">
+                <li className="relative pl-8">
                   <span className="absolute -left-[7px] top-1.5 h-3 w-3 rounded-full bg-[color:var(--color-primary)]" />
                   <p className="text-xs uppercase tracking-[0.25em] text-[color:var(--color-primary)]">
                     {p.time}
