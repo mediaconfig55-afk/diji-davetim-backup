@@ -47,12 +47,18 @@ There is no test suite configured.
 5. Deploy (e.g. Vercel) with the same env vars, point `siteUrl` at the real domain, then print/download
    the two QR codes from `/admin/dashboard` (invite link + photo-upload link).
 
-**Deploying to production (important — no CI):** the live Vercel project (`dueguen/diji-davetim`) is
-**not** connected to auto-deploy on git push — its GitHub App integration isn't authorized, so pushing
-to `main` updates GitHub but does **not** trigger a new Vercel build. After every push meant to go
-live, deploy manually: `npx vercel --prod` (needs `vercel login` or a `VERCEL_TOKEN` env var once per
-machine). Confirm what's actually live with `npx vercel ls diji-davetim` (top row's Age) before
-assuming a push shipped.
+**Deploying to production:** the live Vercel project (`diji-davetim`) is connected to the GitHub repo
+[mediaconfig55-afk/diji-davetim](https://github.com/mediaconfig55-afk/diji-davetim), so a push to
+`main` there triggers a production build automatically. (Re-authorized 2026-09-21; before that the
+GitHub App integration was broken and every release had to be shipped by hand with `npx vercel --prod`.)
+
+Two traps worth knowing:
+
+- **`origin` points at the wrong repo.** The local clone's `origin` is `diji-davetim-backup`, which
+  Vercel does **not** watch. Pushing only to `origin` updates GitHub and ships nothing. Push to the
+  deploying repo explicitly, then sync the backup afterwards.
+- **A green push is not a green deploy.** Confirm by fetching a page and grepping for a string you
+  just changed, or check the deployment list in the Vercel dashboard.
 
 No other file needs to change per event.
 
