@@ -1,8 +1,8 @@
 "use client";
 
-import { Clock } from "lucide-react";
 import { defaultResolvedConfig, type ResolvedEventConfig } from "@/lib/event-config";
 import ScrollFade from "./ScrollFade";
+import SectionHeading from "./SectionHeading";
 
 export default function ProgramSection({
   config = defaultResolvedConfig,
@@ -10,14 +10,16 @@ export default function ProgramSection({
   config?: ResolvedEventConfig;
 }) {
   return (
-    <section className="relative px-6 py-24 sm:py-32">
-      <ScrollFade className="mx-auto mb-14 max-w-lg text-center">
-        <Clock className="mx-auto mb-4 text-[color:var(--color-primary)]" size={22} />
-        <h2 className="font-display gold-text text-3xl sm:text-4xl">Gün Programı</h2>
-      </ScrollFade>
+    <section className="relative sec-pad">
+      <div className="sec-wrap">
+        <SectionHeading
+          title="Gün Programı"
+          subtitle="Günün akışı — dilediğiniz bölüme katılabilirsiniz"
+          className="mb-12"
+        />
 
       <div className="mx-auto max-w-xl">
-        <div className="glass-card rounded-3xl px-6 py-8 sm:px-10">
+        <div className="glass-card rounded-3xl px-6 py-9 sm:px-10">
           <ol className="relative border-l border-[color:var(--color-primary)]/30">
             {config.program.map((p, i) => (
               <ScrollFade key={p.time + p.title} delay={i * 0.1} y={20}>
@@ -35,6 +37,7 @@ export default function ProgramSection({
             ))}
           </ol>
         </div>
+      </div>
       </div>
     </section>
   );

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Hourglass } from "lucide-react";
 import { defaultResolvedConfig, type ResolvedEventConfig } from "@/lib/event-config";
 import ScrollFade from "./ScrollFade";
+import SectionHeading from "./SectionHeading";
 
 function getTimeLeft(targetDate: string) {
   const diff = new Date(targetDate).getTime() - Date.now();
@@ -39,26 +39,50 @@ export default function CountdownSection({
   ];
 
   return (
-    <section className="relative px-6 py-24 sm:py-32">
-      <ScrollFade className="mx-auto mb-14 max-w-lg text-center">
-        <Hourglass className="mx-auto mb-4 text-[color:var(--color-primary)]" size={22} />
-        <h2 className="font-display gold-text text-3xl sm:text-4xl">
-          {time?.over ? "Bugün Büyük Gün!" : "Geri Sayım"}
-        </h2>
-      </ScrollFade>
+    <section className="relative sec-pad">
+      <div className="sec-wrap">
+        <SectionHeading
+          title={time?.over ? "Bugün Büyük Gün!" : "Geri Sayım"}
+          subtitle={
+            time?.over
+              ? "Sizi aramızda görmek bizi çok mutlu etti."
+              : "O güne kalan süre"
+          }
+          className="mb-12"
+        />
 
-      <ScrollFade className="mx-auto grid max-w-lg grid-cols-4 gap-3 sm:gap-4">
-        {units.map((u) => (
-          <div key={u.label} className="glass-card rounded-2xl px-2 py-5 text-center sm:px-4 sm:py-7">
-            <p className="font-display gold-text text-3xl tabular-nums sm:text-4xl">
-              {u.value !== undefined ? String(u.value).padStart(2, "0") : "--"}
-            </p>
-            <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-text)]/50 sm:text-xs">
-              {u.label}
-            </p>
-          </div>
-        ))}
-      </ScrollFade>
+        {/* Tarih geçtiyse dört tane 00 göstermek bozuk duruyordu; onun
+            yerine günü kutlayan tek bir kart gösteriyoruz. */}
+        {time?.over ? (
+          <ScrollFade className="mx-auto max-w-md">
+            <div className="glass-card rounded-3xl px-8 py-12 text-center">
+              <p className="font-display gold-text text-4xl sm:text-5xl">Bugün!</p>
+              <div className="ornament ornament--sm my-5" aria-hidden="true">
+                <i />
+              </div>
+              <p className="text-sm text-[color:var(--color-text)]/60">
+                Mutluluğumuzu paylaştığınız için teşekkür ederiz.
+              </p>
+            </div>
+          </ScrollFade>
+        ) : (
+          <ScrollFade className="mx-auto grid max-w-xl grid-cols-4 gap-3 sm:gap-4">
+            {units.map((u) => (
+              <div
+                key={u.label}
+                className="glass-card rounded-2xl px-2 py-6 text-center sm:px-4 sm:py-8"
+              >
+                <p className="font-display gold-text text-3xl tabular-nums sm:text-5xl">
+                  {u.value !== undefined ? String(u.value).padStart(2, "0") : "--"}
+                </p>
+                <p className="mt-1.5 text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-text)]/50 sm:text-xs">
+                  {u.label}
+                </p>
+              </div>
+            ))}
+          </ScrollFade>
+        )}
+      </div>
     </section>
   );
 }

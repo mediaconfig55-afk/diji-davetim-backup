@@ -9,6 +9,7 @@ import RsvpSection from "@/components/RsvpSection";
 import GuestbookSection from "@/components/GuestbookSection";
 import IbanSection from "@/components/IbanSection";
 import PhotoSection from "@/components/PhotoSection";
+import SectionDivider from "@/components/SectionDivider";
 import Footer from "@/components/Footer";
 
 // Admin panelinden yapılan düzenlemeler anında yansısın diye her istekte
@@ -25,11 +26,17 @@ export default async function Home() {
       <main className="relative">
         <Hero config={config} />
         <ParentsSection config={config} />
+        <SectionDivider />
         <ProgramSection config={config} />
+        <SectionDivider />
         <CountdownSection config={config} />
+        <SectionDivider />
         <RsvpSection />
+        <SectionDivider />
         <GuestbookSection />
+        <SectionDivider />
         <IbanSection config={config} />
+        <SectionDivider />
         <PhotoSection config={config} />
         <Footer config={config} />
       </main>

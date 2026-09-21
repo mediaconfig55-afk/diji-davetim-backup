@@ -104,3 +104,131 @@ body {
 .animate-sparkle {
   animation: sparkle 2.4s ease-in-out infinite;
 }
+
+/* =====================================================================
+   Bölüm ritmi ve süsleme katmanı
+
+   Sorun: her bölüm py-24/py-32 kullanıyordu ve kartlar dar konteynerlerde
+   ortalanıyordu. Masaüstünde içerik ekranın üçte birini kaplayıp arası
+   boş kalıyor, sayfa "yüzen kartlar" gibi duruyordu. Aşağısı boşluğu
+   sıkıştırır ve bölümleri görsel olarak birbirine bağlar.
+   ===================================================================== */
+
+/* Zemine derinlik: düz siyah yerine yukarıdan aşağı açılan sıcak bir hâle */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 55% at 50% 0%, rgba(185, 139, 86, 0.13), transparent 62%),
+    radial-gradient(70% 50% at 50% 100%, rgba(185, 139, 86, 0.08), transparent 60%);
+}
+
+/* Tek bölüm ölçüsü — py-24/py-32 yerine bunu kullan */
+.sec-pad {
+  padding-block: clamp(52px, 7.5vw, 92px);
+  padding-inline: 24px;
+}
+
+/* İçerik kolonu: dar max-w yerine nefes alan ama okunur genişlik */
+.sec-wrap {
+  width: 100%;
+  max-width: 1080px;
+  margin-inline: auto;
+}
+
+/* Bölüm başlığı süslemesi: iki altın çizgi arasında eşkenar dörtgen */
+.ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.ornament::before,
+.ornament::after {
+  content: "";
+  height: 1px;
+  width: clamp(38px, 11vw, 104px);
+  background: linear-gradient(90deg, transparent, var(--color-primary));
+}
+.ornament::after {
+  background: linear-gradient(90deg, var(--color-primary), transparent);
+}
+.ornament i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  background: var(--color-primary);
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 4px rgba(185, 139, 86, 0.14);
+}
+/* Kart içinde kullanılan küçük varyant */
+.ornament--sm { gap: 10px; opacity: 0.65; }
+.ornament--sm::before,
+.ornament--sm::after { width: 34px; }
+.ornament--sm i { width: 5px; height: 5px; box-shadow: none; }
+
+/* Bölümler arası ayırıcı — siyah boşluk yerine ince bir altın iz */
+.sec-divider {
+  height: 1px;
+  max-width: 1080px;
+  margin-inline: auto;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(185, 139, 86, 0.26) 35%,
+    rgba(185, 139, 86, 0.26) 65%,
+    transparent
+  );
+}
+
+/* Kart malzemesi: üst kenara altın ışık teli */
+.glass-card {
+  position: relative;
+}
+.glass-card::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 200, 138, 0.5), transparent);
+  pointer-events: none;
+}
+
+/* Başlıklarda bir kez geçen altın parıltı */
+@keyframes sheen {
+  0% { background-position: 200% 0; }
+  100% { background-position: -60% 0; }
+}
+.gold-text.sheen-once {
+  background-size: 220% auto;
+  animation: sheen 2.1s ease-out 0.15s 1 both;
+}
+
+/* Kademeli beliren öğeler */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.stagger > * { animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.13s; }
+.stagger > *:nth-child(3) { animation-delay: 0.21s; }
+.stagger > *:nth-child(4) { animation-delay: 0.29s; }
+.stagger > *:nth-child(5) { animation-delay: 0.37s; }
+.stagger > *:nth-child(6) { animation-delay: 0.45s; }
+
+/* Hareketi azalt tercihi: bütün süs animasyonları sussun */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-float-slow,
+  .animate-float-slower,
+  .animate-shimmer,
+  .animate-sparkle,
+  .gold-text.sheen-once,
+  .stagger > * {
+    animation: none !important;
+  }
+}

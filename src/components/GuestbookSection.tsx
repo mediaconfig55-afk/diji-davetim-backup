@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { BookHeart, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { GuestbookRecord } from "@/lib/types";
 import ScrollFade from "./ScrollFade";
+import SectionHeading from "./SectionHeading";
 import TiltCard from "./TiltCard";
 
 // supabase/migration.sql'deki `char_length(message) between 1 and 1000`
@@ -60,14 +61,13 @@ export default function GuestbookSection() {
   }
 
   return (
-    <section className="relative px-6 py-24 sm:py-32">
-      <ScrollFade className="mx-auto mb-14 max-w-lg text-center">
-        <BookHeart className="mx-auto mb-4 text-[color:var(--color-primary)]" size={22} />
-        <h2 className="font-display gold-text text-3xl sm:text-4xl">Anı Defteri</h2>
-        <p className="mt-3 text-sm text-[color:var(--color-text)]/60">
-          Gelin ve damada güzel bir anı ya da dilek bırakın.
-        </p>
-      </ScrollFade>
+    <section className="relative sec-pad">
+      <div className="sec-wrap">
+      <SectionHeading
+          title="Anı Defteri"
+          subtitle="Gelin ve damada güzel bir anı ya da dilek bırakın."
+          className="mb-12"
+        />
 
       <ScrollFade className="mx-auto max-w-md">
         <TiltCard className="px-6 py-8 sm:px-10">
@@ -130,6 +130,7 @@ export default function GuestbookSection() {
           </p>
         )}
       </div>
+    </div>
     </section>
   );
 }

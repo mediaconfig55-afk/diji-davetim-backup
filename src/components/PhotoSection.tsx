@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
-import { Camera, Images } from "lucide-react";
+import { Images } from "lucide-react";
 import { defaultResolvedConfig, type ResolvedEventConfig } from "@/lib/event-config";
 import ScrollFade from "./ScrollFade";
+import SectionHeading from "./SectionHeading";
 import TiltCard from "./TiltCard";
 
 export default function PhotoSection({
@@ -25,15 +26,13 @@ export default function PhotoSection({
   }, [uploadUrl]);
 
   return (
-    <section className="relative px-6 py-24 sm:py-32">
-      <ScrollFade className="mx-auto mb-14 max-w-lg text-center">
-        <Camera className="mx-auto mb-4 text-[color:var(--color-primary)]" size={22} />
-        <h2 className="font-display gold-text text-3xl sm:text-4xl">Anı Fotoğrafları</h2>
-        <p className="mt-3 text-sm text-[color:var(--color-text)]/60">
-          Çektiğiniz fotoğrafları QR kodu okutarak havuza ekleyin. Tüm fotoğraflar gece
-          sona erdikten sonra herkese açılacak — o ana kadar kimse göremez.
-        </p>
-      </ScrollFade>
+    <section className="relative sec-pad">
+      <div className="sec-wrap">
+      <SectionHeading
+          title="Anı Fotoğrafları"
+          subtitle="Çektiğiniz fotoğrafları QR kodu okutarak havuza ekleyin. Tüm fotoğraflar gece sona erdikten sonra herkese açılacak — o ana kadar kimse göremez."
+          className="mb-12"
+        />
 
       <ScrollFade className="mx-auto max-w-md">
         <TiltCard className="flex flex-col items-center px-6 py-8 text-center sm:px-10">
@@ -63,6 +62,7 @@ export default function PhotoSection({
           </div>
         </TiltCard>
       </ScrollFade>
+    </div>
     </section>
   );
 }

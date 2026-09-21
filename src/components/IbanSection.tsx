@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, Check, Copy, Gift } from "lucide-react";
+import { AlertCircle, Check, Copy } from "lucide-react";
 import { defaultResolvedConfig, type ResolvedEventConfig } from "@/lib/event-config";
 import ScrollFade from "./ScrollFade";
+import SectionHeading from "./SectionHeading";
 import TiltCard from "./TiltCard";
 
 function legacyCopy(text: string): boolean {
@@ -57,14 +58,13 @@ export default function IbanSection({
   }
 
   return (
-    <section className="relative px-6 py-24 sm:py-32">
-      <ScrollFade className="mx-auto mb-14 max-w-lg text-center">
-        <Gift className="mx-auto mb-4 text-[color:var(--color-primary)]" size={22} />
-        <h2 className="font-display gold-text text-3xl sm:text-4xl">Hediye</h2>
-        <p className="mt-3 text-sm text-[color:var(--color-text)]/60">
-          Bizzat gelemeseniz de dijital hediyenizi aşağıdaki hesaplara gönderebilirsiniz.
-        </p>
-      </ScrollFade>
+    <section className="relative sec-pad">
+      <div className="sec-wrap">
+      <SectionHeading
+          title="Hediye"
+          subtitle="Bizzat gelemeseniz de dijital hediyenizi aşağıdaki hesaplara gönderebilirsiniz."
+          className="mb-12"
+        />
 
       <div className="mx-auto grid max-w-2xl gap-6 sm:grid-cols-2">
         {config.ibans.map((card, i) => (
@@ -99,6 +99,7 @@ export default function IbanSection({
           </ScrollFade>
         ))}
       </div>
+    </div>
     </section>
   );
 }

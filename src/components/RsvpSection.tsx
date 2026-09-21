@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, HelpCircle, X, PartyPopper } from "lucide-react";
+import { Check, HelpCircle, X } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { RsvpStatus } from "@/lib/types";
 import ScrollFade from "./ScrollFade";
+import SectionHeading from "./SectionHeading";
 import TiltCard from "./TiltCard";
 
 const options: { value: RsvpStatus; label: string; icon: typeof Check }[] = [
@@ -50,14 +51,13 @@ export default function RsvpSection() {
   }
 
   return (
-    <section className="relative px-6 py-24 sm:py-32">
-      <ScrollFade className="mx-auto mb-14 max-w-lg text-center">
-        <PartyPopper className="mx-auto mb-4 text-[color:var(--color-primary)]" size={22} />
-        <h2 className="font-display gold-text text-3xl sm:text-4xl">Katılım Bildirimi</h2>
-        <p className="mt-3 text-sm text-[color:var(--color-text)]/60">
-          Bizimle olup olamayacağınızı bildirerek hazırlıklarımıza yardımcı olabilirsiniz.
-        </p>
-      </ScrollFade>
+    <section className="relative sec-pad">
+      <div className="sec-wrap">
+      <SectionHeading
+          title="Katılım Bildirimi"
+          subtitle="Bizimle olup olamayacağınızı bildirerek hazırlıklarımıza yardımcı olabilirsiniz."
+          className="mb-12"
+        />
 
       <ScrollFade className="mx-auto max-w-md">
         <TiltCard className="px-6 py-8 sm:px-10">
@@ -148,6 +148,7 @@ export default function RsvpSection() {
           )}
         </TiltCard>
       </ScrollFade>
+    </div>
     </section>
   );
 }
